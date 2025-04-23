@@ -42,6 +42,8 @@ enum EState {
 	EState_Eating
 };
 
+//#define USE_LEDS
+
 namespace BSP {
 
 constexpr std::uint32_t TICKS_PER_SEC {100};

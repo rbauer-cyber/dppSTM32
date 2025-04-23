@@ -26,7 +26,7 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN TD */
-//#define USE_QP
+#define USE_QP
 /* USER CODE END TD */
 
 /* Private define ------------------------------------------------------------*/

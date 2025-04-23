@@ -135,12 +135,6 @@ Q_STATE_DEF(Table, initial) {
         m_isHungry[n] = false;
         BSP::displayPhilStat(n, EState_Thinking);
     }
-
-#ifdef QSPY
-    QS_FUN_DICTIONARY(&Table::active);
-    QS_FUN_DICTIONARY(&Table::serving);
-    QS_FUN_DICTIONARY(&Table::paused);
-#endif
     return tran(&serving);
 }
 

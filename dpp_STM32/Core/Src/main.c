@@ -84,6 +84,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		//Timer 2 period is 2 micro-secs, 100 counts with auto-reload
 		s_elapsedTimeUs += 2;
 #if 0
+		// Use this technique for Stepper acceleration control.
 		if ( s_timerCount >= 10000 )
 		{
 			s_timerCount = 0;

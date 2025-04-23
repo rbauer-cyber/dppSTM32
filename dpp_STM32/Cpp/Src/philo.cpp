@@ -32,13 +32,13 @@
 // <info@state-machine.com>
 //
 //$endhead${.::philo.cpp} ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-
 #include "qpcpp.hpp"             // QP/C++ real-time embedded framework
 #include "dpp.hpp"               // DPP Application interface
 #include "bsp.hpp"               // Board Support Package
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 
 //----------------------------------------------------------------------------
 namespace { // unnamed namespace for local definitions with internal linkage
@@ -124,19 +124,12 @@ Q_STATE_DEF(Philo, initial) {
     Q_UNUSED_PAR(e);
 
     m_id = static_cast<std::uint8_t>(this - &inst[0]);
-#ifdef QSPY
+
     QS_OBJ_ARR_DICTIONARY(&Philo::inst[m_id], m_id);
     QS_OBJ_ARR_DICTIONARY(&Philo::inst[m_id].m_timeEvt, m_id);
-#endif
+
     subscribe(EAT_SIG);
     subscribe(TEST_SIG);
-
-#ifdef QSPY
-    QS_FUN_DICTIONARY(&Philo::thinking);
-    QS_FUN_DICTIONARY(&Philo::hungry);
-    QS_FUN_DICTIONARY(&Philo::eating);
-#endif
-
     return tran(&thinking);
 }
 

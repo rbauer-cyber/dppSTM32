@@ -108,7 +108,7 @@ QS_SIG_DICTIONARY(HUNGRY_SIG,  nullptr);</code>
     m_id(0xFFU)</code>
    </operation>
    <!--${AOs::Philo::SM}-->
-   <statechart properties="0x02">
+   <statechart properties="0x00">
     <!--${AOs::Philo::SM::initial}-->
     <initial target="../1">
      <action>Q_UNUSED_PAR(e);
@@ -239,7 +239,7 @@ for (std::uint8_t n = 0U; n &lt; N_PHILO; ++n) {
 }</code>
    </operation>
    <!--${AOs::Table::SM}-->
-   <statechart properties="0x02">
+   <statechart properties="0x00">
     <!--${AOs::Table::SM::initial}-->
     <initial target="../1/2">
      <action>Q_UNUSED_PAR(e);
@@ -254,7 +254,7 @@ subscribe(TEST_SIG);
 for (std::uint8_t n = 0U; n &lt; N_PHILO; ++n) {
     m_fork[n] = FREE;
     m_isHungry[n] = false;
-    BSP::displayPhilStat(n, THINKING);
+    BSP::displayPhilStat(n, EState_Thinking);
 }</action>
      <initial_glyph conn="2,4,5,1,46,20,-10">
       <action box="0,-2,6,2"/>
@@ -293,7 +293,7 @@ for (std::uint8_t n = 0U; n &lt; N_PHILO; ++n) {
 #endif
         QP::QActive::PUBLISH(te, this);
         m_isHungry[n] = false;
-        BSP::displayPhilStat(n, EATING);
+        BSP::displayPhilStat(n, EState_Eating);
     }
 }</entry>
       <!--${AOs::Table::SM::active::serving::HUNGRY}-->
@@ -303,7 +303,7 @@ for (std::uint8_t n = 0U; n &lt; N_PHILO; ++n) {
 // phil ID must be in range and he must be not hungry
 Q_ASSERT((n &lt; N_PHILO) &amp;&amp; (!m_isHungry[n]));
 
-BSP::displayPhilStat(n, HUNGRY);
+BSP::displayPhilStat(n, EState_Hungry);
 std::uint8_t m = left(n);</action>
        <!--${AOs::Table::SM::active::serving::HUNGRY::[bothfree]}-->
        <choice>
@@ -317,7 +317,7 @@ TableEvt *pe = Q_NEW(TableEvt, EAT_SIG);
 pe-&gt;philoId = n;
 #endif
 QP::QActive::PUBLISH(pe, this);
-BSP::displayPhilStat(n, EATING);</action>
+BSP::displayPhilStat(n, EState_Eating);</action>
         <choice_glyph conn="20,28,5,-1,12">
          <action box="1,0,10,2"/>
         </choice_glyph>
@@ -341,7 +341,7 @@ BSP::displayPhilStat(n, EATING);</action>
 // phil ID must be in range and he must be not hungry
 Q_ASSERT((n &lt; N_PHILO) &amp;&amp; (!m_isHungry[n]));
 
-BSP::displayPhilStat(n, THINKING);
+BSP::displayPhilStat(n, EState_Thinking);
 std::uint8_t m = left(n);
 
 // both forks of Phil[n] must be used
@@ -362,7 +362,7 @@ if (m_isHungry[m] &amp;&amp; (m_fork[m] == FREE)) {
     pe-&gt;philoId = m;
 #endif
     QP::QActive::PUBLISH(pe, this);
-    BSP::displayPhilStat(m, EATING);
+    BSP::displayPhilStat(m, EState_Eating);
 }
 m = left(n); // check the left neighbor
 n = left(m); // left fork of the left neighbor
@@ -377,7 +377,7 @@ if (m_isHungry[m] &amp;&amp; (m_fork[n] == FREE)) {
     pe-&gt;philoId = m;
 #endif
     QP::QActive::PUBLISH(pe, this);
-    BSP::displayPhilStat(m, EATING);
+    BSP::displayPhilStat(m, EState_Eating);
 }</action>
        <tran_glyph conn="4,36,3,-1,16">
         <action box="0,-2,6,2"/>
@@ -418,7 +418,7 @@ if (m_isHungry[m] &amp;&amp; (m_fork[n] == FREE)) {
 Q_ASSERT((n &lt; N_PHILO) &amp;&amp; (!m_isHungry[n]));
 
 m_isHungry[n] = true;
-BSP::displayPhilStat(n, HUNGRY);</action>
+BSP::displayPhilStat(n, EState_Hungry);</action>
        <tran_glyph conn="4,66,3,-1,16">
         <action box="0,-2,6,2"/>
        </tran_glyph>
@@ -430,7 +430,7 @@ BSP::displayPhilStat(n, HUNGRY);</action>
 // phil ID must be in range and he must be not hungry
 Q_ASSERT((n &lt; N_PHILO) &amp;&amp; (!m_isHungry[n]));
 
-BSP::displayPhilStat(n, THINKING);
+BSP::displayPhilStat(n, EState_Thinking);
 std::uint8_t m = left(n);
 
 // both forks of Phil[n] must be used
@@ -455,9 +455,11 @@ m_fork[n] = FREE;</action>
  </package>
  <!--${.}-->
  <directory name=".">
-  <!--${.::dpp.hpp}-->
-  <file name="dpp.hpp">
-   <text>#ifndef DPP_HPP_
+  <!--${.::../Inc}-->
+  <directory name="../Inc">
+   <!--${.::../Inc::dpp.hpp}-->
+   <file name="dpp.hpp">
+    <text>#ifndef DPP_HPP_
 #define DPP_HPP_
 
 $declare ${Shared}
@@ -476,12 +478,17 @@ extern QP::QXMutex TH_mutex;
 #endif // QXK_HPP_
 
 #endif // DPP_HPP_</text>
-  </file>
+   </file>
+  </directory>
   <!--${.::philo.cpp}-->
   <file name="philo.cpp">
    <text>#include &quot;qpcpp.hpp&quot;             // QP/C++ real-time embedded framework
 #include &quot;dpp.hpp&quot;               // DPP Application interface
 #include &quot;bsp.hpp&quot;               // Board Support Package
+
+#include &lt;stdlib.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
 
 //----------------------------------------------------------------------------
 namespace { // unnamed namespace for local definitions with internal linkage
@@ -513,6 +520,9 @@ $define ${AOs::Philo}</text>
    <text>#include &quot;qpcpp.hpp&quot;             // QP/C++ real-time embedded framework
 #include &quot;dpp.hpp&quot;               // DPP Application interface
 #include &quot;bsp.hpp&quot;               // Board Support Package
+
+#include &quot;console.h&quot;
+#include &quot;multiLed.hpp&quot;
 
 $declare ${AOs::Table}
 

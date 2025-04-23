@@ -40,6 +40,8 @@
 #include "console.h"
 #include "multiLed.hpp"
 
+extern CMultiLed g_multiLed;
+
 // add other drivers if necessary...
 #define USE_HAL
 
@@ -348,7 +350,7 @@ void displayPhilStat(uint8_t n, EState state) {
 	uint8_t ledState = (state == EState_Eating) ? 1 : 0;
     consoleDisplayArgs("philo:: %d %s\r\n", n, pStateMsg[state]);
     //g_multiLed.ShowState();
-    //g_multiLed.SetLed(n, ledState);
+    g_multiLed.SetLed(n, ledState);
     //g_multiLed.ToggleLed(g_multiLed.MAX_LEDS);
 #endif
     // app-specific trace record...

@@ -4,7 +4,10 @@
  *  Created on: Apr 5, 2025
  *      Author: rbauer
  */
-//#define USE_QUANTUM
+
+#define USE_QUANTUM
+//#define USE_HAL_DELAY
+//#define USE_MOTOR
 //#define USE_TIMER_INTERRUPT
 //#define USE_UART_TX_INTERRUPT
 #define USE_UART_TX_DATA
@@ -12,7 +15,7 @@
 //#define USE_UART_RX_BLOCK
 //#define USE_UART_RX
 //#define USE_UART_DMA
-#define USE_POLLING
+//#define USE_POLLING
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -45,14 +48,6 @@ static uint8_t s_pins[] =
 		kDigitalPin12, // PA6
 };
 
-static uint8_t s_numPins = sizeof(s_pins) / sizeof(s_pins[0]);
-CMultiLed g_multiLed( s_pins, s_numPins );
-
-int16_t s_stepsPerRevolution = 2048;
-int16_t s_increment = 2048;
-int16_t s_motorSpeed = 15;
-static int16_t s_motorPosition = 0;
-
 //kAnalogPin00,	//PA0	A0 - CN8 - IN1
 //kAnalogPin01,	//PA1	A1 - CN8 - IN2
 //kAnalogPin02,	//PA4	A2 - CN8 - IN3
@@ -65,14 +60,22 @@ static int16_t s_motorPosition = 0;
 //kAnalogPin04,	//PC1	A4 - CN8 - IN3
 //kAnalogPin05,	//PC0	A5 - CN8 - IN4
 
+// Connections from nucleo board CN8 to motor controller
 //purple - IN1	- A2
 //gray	 - IN2	- A3
 //white	 - IN3	- A4
 //black	 - IN4	- A5
 
-// Initialize with pin sequence IN1-IN3-IN2-IN4
-// s_stepper(s_stepsPerRevolution, A3, A1, A2, A0);
-// s_stepper(s_stepsPerRevolution, A3, A1, A2, A0);
+static uint8_t s_numPins = sizeof(s_pins) / sizeof(s_pins[0]);
+CMultiLed g_multiLed( s_pins, s_numPins );
+
+#ifdef USE_MOTOR
+int16_t s_stepsPerRevolution = 2048;
+int16_t s_increment = 2048;
+int16_t s_motorSpeed = 15;
+static int16_t s_motorPosition = 0;
+
+// Initialize with pin sequence IN1-IN3-IN2-IN4 on the stepper motor controller board
 // s_stepper(s_stepsPerRevolution, A3, A1, A2, A0);
 Stepper s_stepper(s_stepsPerRevolution,
 		kAnalogPin02, kAnalogPin04,
@@ -90,13 +93,16 @@ int16_t moveMotor(int16_t increment)
     s_motorPosition += increment;
     return s_motorPosition;
 }
+#endif
 
 void altMain()
 {
 	//int32_t encoderPosition = 0;
 	// getMicros() defined in main using TIM2 at 50MHz
+#ifdef USE_MOTOR
 	uint32_t startTimeUs = getMicros();
 	uint32_t timeNowUs = 0;
+
 	int32_t newEncoderPosition = 0;
 	int32_t encoderPosition = 0;
 	int motorPosition = 0;
@@ -106,11 +112,12 @@ void altMain()
 	//bool state = false;
 	encoderPosition = encoderUpdate();
 	initMotor();
+#endif
 
 	while ( 1 )
 	{
 #if defined(USE_POLLING)
-#if 0
+#ifdef USE_HAL_DELAY
 		for ( size_t pinIndex = 0; pinIndex < g_multiLed.MaxPins(); pinIndex++ )
 		{
 			consoleDisplayArgs("Toggling LED %d\r\n", pinIndex);
@@ -133,7 +140,7 @@ void altMain()
 			startTimeUs = timeNowUs;
 			consoleDisplay("Toggling LED\r\n");
 			g_multiLed.ToggleLed(CMultiLed::MAX_LEDS);
-
+#ifdef USE_MOTOR
 			newEncoderPosition = encoderUpdate();
 
 			if ( newEncoderPosition != encoderPosition )
@@ -148,8 +155,9 @@ void altMain()
 
 			consoleDisplayArgs("Encoder position %d, Motor Position %d\r\n",
 					encoderPosition, motorPosition);
+#endif
 //			consoleDisplayArgs("Encoder position %d\r\n", encoderPosition);
-#if 0
+#ifdef USE_MOTOR
 			//motorIndex = motorPosition / abs(motorIncrement);
 			s_stepper.step(motorIncrement);
 			motorPosition += motorIncrement;
@@ -162,8 +170,7 @@ void altMain()
 		}
 #endif
 #elif defined(USE_QUANTUM)
-		//snprintf(outBuf, sizeof(outBuf), "Invoking bspMain\r\n");
-		//consoleDisplay("Invoking bspMain\r\n");
+		consoleDisplay("Invoking Quantum BSP_Main\r\n");
 		BSP::bspMain();
 #else
 		encoderPosition = encoderUpdate();
