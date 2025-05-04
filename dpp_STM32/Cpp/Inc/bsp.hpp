@@ -46,7 +46,7 @@ enum EState {
 
 namespace BSP {
 
-constexpr std::uint32_t TICKS_PER_SEC {100};
+constexpr std::uint32_t TICKS_PER_SEC {2000};
 
 void init();
 void start();

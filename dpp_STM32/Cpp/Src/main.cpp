@@ -32,7 +32,6 @@
 // <info@state-machine.com>
 //============================================================================
 #include "qpcpp.hpp"             // QP/C++ real-time embedded framework
-#include "dpp.hpp"               // DPP Application interface
 #include "bsp.hpp"               // Board Support Package
 
 namespace BSP {

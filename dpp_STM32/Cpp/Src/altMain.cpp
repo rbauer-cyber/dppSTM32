@@ -8,6 +8,7 @@
 #define USE_QUANTUM
 //#define USE_HAL_DELAY
 //#define USE_MOTOR
+//#define USE_MOTOR_WITH_ENCODER
 //#define USE_TIMER_INTERRUPT
 //#define USE_UART_TX_INTERRUPT
 #define USE_UART_TX_DATA
@@ -39,15 +40,6 @@ void appSysTickHandler()
 }
 #endif
 
-static uint8_t s_pins[] =
-{
-		kDigitalPin08, // PA9
-		kDigitalPin09, // PC7
-		kDigitalPin10, // PB6
-		kDigitalPin11, // PA7
-		kDigitalPin12, // PA6
-};
-
 //kAnalogPin00,	//PA0	A0 - CN8 - IN1
 //kAnalogPin01,	//PA1	A1 - CN8 - IN2
 //kAnalogPin02,	//PA4	A2 - CN8 - IN3
@@ -66,8 +58,17 @@ static uint8_t s_pins[] =
 //white	 - IN3	- A4
 //black	 - IN4	- A5
 
-static uint8_t s_numPins = sizeof(s_pins) / sizeof(s_pins[0]);
-CMultiLed g_multiLed( s_pins, s_numPins );
+static uint8_t s_multiLedPins[] =
+{
+		kDigitalPin08, // PA9
+		kDigitalPin09, // PC7
+		kDigitalPin10, // PB6
+		kDigitalPin11, // PA7
+		kDigitalPin12, // PA6
+};
+
+static uint8_t s_numPins = sizeof(s_multiLedPins) / sizeof(s_multiLedPins[0]);
+CMultiLed g_multiLed( s_multiLedPins, s_numPins );
 
 #ifdef USE_MOTOR
 int16_t s_stepsPerRevolution = 2048;
@@ -103,14 +104,16 @@ void altMain()
 	uint32_t startTimeUs = getMicros();
 	uint32_t timeNowUs = 0;
 
+#ifdef USE_MOTOR_WITH_ENCODER
 	int32_t newEncoderPosition = 0;
 	int32_t encoderPosition = 0;
+	int motorPositionDelta = 0;
+	encoderPosition = encoderUpdate();
+#endif
 	int motorPosition = 0;
 	int motorIncrement = 128;
-	int motorPositionDelta = 0;
 	//int motorIndex = 0;
 	//bool state = false;
-	encoderPosition = encoderUpdate();
 	initMotor();
 #endif
 
@@ -138,9 +141,9 @@ void altMain()
 		if ( (timeNowUs-startTimeUs) > 1000000 )
 		{
 			startTimeUs = timeNowUs;
-			consoleDisplay("Toggling LED\r\n");
+			//consoleDisplay("Toggling LED\r\n");
 			g_multiLed.ToggleLed(CMultiLed::MAX_LEDS);
-#ifdef USE_MOTOR
+#ifdef USE_MOTOR_WITH_ENCODER
 			newEncoderPosition = encoderUpdate();
 
 			if ( newEncoderPosition != encoderPosition )
@@ -155,8 +158,7 @@ void altMain()
 
 			consoleDisplayArgs("Encoder position %d, Motor Position %d\r\n",
 					encoderPosition, motorPosition);
-#endif
-//			consoleDisplayArgs("Encoder position %d\r\n", encoderPosition);
+#else
 #ifdef USE_MOTOR
 			//motorIndex = motorPosition / abs(motorIncrement);
 			s_stepper.step(motorIncrement);
@@ -167,6 +169,8 @@ void altMain()
 				motorIncrement = motorIncrement * -1;
 			}
 #endif
+#endif
+//			consoleDisplayArgs("Encoder position %d\r\n", encoderPosition);
 		}
 #endif
 #elif defined(USE_QUANTUM)

@@ -52,6 +52,8 @@ extern CMultiLed g_multiLed;
 //
 //CMultiLed g_multiLed( s_pins, s_numPins );
 
+//#define NDEBUG
+
 //============================================================================
 namespace { // unnamed namespace for local stuff with internal linkage
 
@@ -103,6 +105,7 @@ Q_NORETURN Q_onError(char const * const module, int_t const id) {
     // (assuming that you ship your production code with assertions enabled).
     Q_UNUSED_PAR(module);
     Q_UNUSED_PAR(id);
+    consoleDisplayArgs("Q_onError in %s:%d\r\n", module, id);
     QS_ASSERTION(module, id, 10000U);
 
 #ifdef USE_LEDS

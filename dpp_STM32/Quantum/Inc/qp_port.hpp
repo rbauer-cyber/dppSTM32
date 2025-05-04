@@ -40,6 +40,7 @@
 #include "qp_config.hpp"  // QP configuration from the application
 // no-return function specifier (C++11 Standard)
 #define Q_NORETURN  [[ noreturn ]] void
+#define RAB_CHANGE
 
 // QF configuration for QV -- data members of the QActive class...
 
@@ -73,15 +74,25 @@
 #endif
 
 // interrupt disabling policy, see NOTE2 and NOTE3
+#ifndef RAB_CHANGE
 #define QF_INT_DISABLE()        (QF_int_disable_())
 #define QF_INT_ENABLE()         (QF_int_enable_())
+#else
+#define QF_INT_DISABLE()        (static_cast<void>(0))
+#define QF_INT_ENABLE()         (static_cast<void>(0))
+#endif
 
 // QF critical section, see NOTE1, NOTE2, and NOTE3
 #define QF_CRIT_STAT
+#ifndef RAB_CHANGE
 #define QF_CRIT_ENTRY()         (QF_crit_entry_())
 #define QF_CRIT_EXIT()          (QF_crit_exit_())
-
 #define QF_CRIT_EXIT_NOP()      __asm volatile ("isb" ::: "memory")
+#else
+#define QF_CRIT_ENTRY()         (static_cast<void>(0))
+#define QF_CRIT_EXIT()          (static_cast<void>(0))
+#define QF_CRIT_EXIT_NOP()      (static_cast<void>(0))
+#endif
 
 #if (__ARM_ARCH == 6) // ARMv6-M?
     // hand-optimized quick LOG2 in assembly

@@ -217,7 +217,7 @@ __asm volatile (
 void QV_init(void) {
 
 #if (__ARM_ARCH != 6)   //--------- if ARMv7-M and higher...
-
+#ifndef RAB_CHANGE // RAB change, preserve default HAL interrupt settings
     // SCB_SYSPRI[2]:  SysTick
     SCB_SYSPRI[2] = (SCB_SYSPRI[2] | (QF_BASEPRI << 24U));
 
@@ -228,6 +228,7 @@ void QV_init(void) {
     }
 
 #endif                  //--------- ARMv7-M or higher
+#endif
 
 #ifdef __ARM_FP         //--------- if VFP available...
     // make sure that the FPU is enabled by setting CP10 & CP11 Full Access
