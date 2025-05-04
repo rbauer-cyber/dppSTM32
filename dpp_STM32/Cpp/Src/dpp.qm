@@ -113,14 +113,8 @@ QS_SIG_DICTIONARY(HUNGRY_SIG,  nullptr);</code>
     <initial target="../1">
      <action>Q_UNUSED_PAR(e);
 
-m_id = static_cast&lt;std::uint8_t&gt;(this - &amp;inst[0]);
-
-QS_OBJ_ARR_DICTIONARY(&amp;Philo::inst[m_id], m_id);
-QS_OBJ_ARR_DICTIONARY(&amp;Philo::inst[m_id].m_timeEvt, m_id);
-
-subscribe(EAT_SIG);
-subscribe(TEST_SIG);</action>
-     <initial_glyph conn="2,4,5,1,20,7,-2">
+m_id = static_cast&lt;std::uint8_t&gt;(this - &amp;inst[0]);</action>
+     <initial_glyph conn="2,4,5,1,25,7,-7">
       <action box="0,-2,6,2"/>
      </initial_glyph>
     </initial>
@@ -167,8 +161,8 @@ AO_Table-&gt;POST(pe, this);</entry>
       <!--${AOs::Philo::SM::hungry::EAT::[e->philoId==m_id]}-->
       <choice target="../../../3">
        <guard brief="e-&gt;philoId == m_id">Q_EVT_CAST(TableEvt)-&gt;philoId == m_id</guard>
-       <choice_glyph conn="10,36,5,1,12,10,-2">
-        <action box="1,0,23,6"/>
+       <choice_glyph conn="10,36,5,1,18,10,-8">
+        <action box="1,0,15,2"/>
        </choice_glyph>
       </choice>
       <tran_glyph conn="2,36,3,-1,8">
@@ -198,10 +192,11 @@ TableEvt const *pe = Q_NEW(TableEvt, DONE_SIG, m_id);
 TableEvt *pe = Q_NEW(TableEvt, DONE_SIG);
 pe-&gt;philoId = m_id;
 #endif
-QP::QActive::PUBLISH(pe, this);</exit>
+//QP::QActive::PUBLISH(pe, this);
+AO_Table-&gt;POST(pe, this);</exit>
      <!--${AOs::Philo::SM::eating::TIMEOUT}-->
      <tran trig="TIMEOUT" target="../../1">
-      <tran_glyph conn="2,54,3,1,22,-41,-4">
+      <tran_glyph conn="2,54,3,1,29,-41,-11">
        <action box="0,-2,13,2"/>
       </tran_glyph>
      </tran>
@@ -244,13 +239,6 @@ for (std::uint8_t n = 0U; n &lt; N_PHILO; ++n) {
     <initial target="../1/2">
      <action>Q_UNUSED_PAR(e);
 
-QS_OBJ_DICTIONARY(&amp;Table::inst);
-
-subscribe(DONE_SIG);
-subscribe(PAUSE_SIG);
-subscribe(SERVE_SIG);
-subscribe(TEST_SIG);
-
 for (std::uint8_t n = 0U; n &lt; N_PHILO; ++n) {
     m_fork[n] = FREE;
     m_isHungry[n] = false;
@@ -291,7 +279,7 @@ for (std::uint8_t n = 0U; n &lt; N_PHILO; ++n) {
         TableEvt *te = Q_NEW(TableEvt, EAT_SIG);
         te-&gt;philoId = n;
 #endif
-        QP::QActive::PUBLISH(te, this);
+        AO_Philo[n]-&gt;POST(te, this);
         m_isHungry[n] = false;
         BSP::displayPhilStat(n, EState_Eating);
     }
@@ -316,7 +304,7 @@ TableEvt const *pe = Q_NEW(TableEvt, EAT_SIG, n);
 TableEvt *pe = Q_NEW(TableEvt, EAT_SIG);
 pe-&gt;philoId = n;
 #endif
-QP::QActive::PUBLISH(pe, this);
+AO_Philo[n]-&gt;POST(pe, this);
 BSP::displayPhilStat(n, EState_Eating);</action>
         <choice_glyph conn="20,28,5,-1,12">
          <action box="1,0,10,2"/>
@@ -361,9 +349,10 @@ if (m_isHungry[m] &amp;&amp; (m_fork[m] == FREE)) {
     TableEvt *pe = Q_NEW(TableEvt, EAT_SIG);
     pe-&gt;philoId = m;
 #endif
-    QP::QActive::PUBLISH(pe, this);
+    AO_Philo[m]-&gt;POST(pe, this);
     BSP::displayPhilStat(m, EState_Eating);
 }
+
 m = left(n); // check the left neighbor
 n = left(m); // left fork of the left neighbor
 if (m_isHungry[m] &amp;&amp; (m_fork[n] == FREE)) {
@@ -376,7 +365,7 @@ if (m_isHungry[m] &amp;&amp; (m_fork[n] == FREE)) {
     TableEvt *pe = Q_NEW(TableEvt, EAT_SIG);
     pe-&gt;philoId = m;
 #endif
-    QP::QActive::PUBLISH(pe, this);
+    AO_Philo[m]-&gt;POST(pe, this);
     BSP::displayPhilStat(m, EState_Eating);
 }</action>
        <tran_glyph conn="4,36,3,-1,16">
@@ -392,8 +381,8 @@ if (m_isHungry[m] &amp;&amp; (m_fork[n] == FREE)) {
       </tran>
       <!--${AOs::Table::SM::active::serving::PAUSE}-->
       <tran trig="PAUSE" target="../../3">
-       <tran_glyph conn="4,44,3,1,36,8,-2">
-        <action box="0,-2,7,2"/>
+       <tran_glyph conn="4,44,3,1,40,10,-6">
+        <action box="0,-2,8,2"/>
        </tran_glyph>
       </tran>
       <state_glyph node="4,20,34,26">
@@ -406,7 +395,7 @@ if (m_isHungry[m] &amp;&amp; (m_fork[n] == FREE)) {
       <exit>BSP::displayPaused(0U);</exit>
       <!--${AOs::Table::SM::active::paused::SERVE}-->
       <tran trig="SERVE" target="../../2">
-       <tran_glyph conn="4,62,3,1,38,-31,-4">
+       <tran_glyph conn="4,64,3,1,44,-33,-10">
         <action box="0,-2,7,2"/>
        </tran_glyph>
       </tran>
@@ -419,8 +408,8 @@ Q_ASSERT((n &lt; N_PHILO) &amp;&amp; (!m_isHungry[n]));
 
 m_isHungry[n] = true;
 BSP::displayPhilStat(n, EState_Hungry);</action>
-       <tran_glyph conn="4,66,3,-1,16">
-        <action box="0,-2,6,2"/>
+       <tran_glyph conn="4,68,3,-1,16">
+        <action box="0,-2,9,2"/>
        </tran_glyph>
       </tran>
       <!--${AOs::Table::SM::active::paused::DONE}-->
@@ -438,18 +427,18 @@ Q_ASSERT((m_fork[n] == USED) &amp;&amp; (m_fork[m] == USED));
 
 m_fork[m] = FREE;
 m_fork[n] = FREE;</action>
-       <tran_glyph conn="4,70,3,-1,16">
+       <tran_glyph conn="4,72,3,-1,16">
         <action box="0,-2,6,2"/>
        </tran_glyph>
       </tran>
-      <state_glyph node="4,48,34,24">
+      <state_glyph node="4,50,34,24">
        <entry box="0,3,18,4"/>
        <exit box="0,7,18,4"/>
       </state_glyph>
      </state>
-     <state_glyph node="2,6,44,68"/>
+     <state_glyph node="2,6,50,72"/>
     </state>
-    <state_diagram size="50,76"/>
+    <state_diagram size="60,83"/>
    </statechart>
   </class>
  </package>
@@ -497,14 +486,14 @@ Q_DEFINE_THIS_FILE
 
 // helper function to provide a randomized think time for Philos
 static inline QP::QTimeEvtCtr think_time() {
-    return static_cast&lt;QP::QTimeEvtCtr&gt;((BSP::random() % BSP::TICKS_PER_SEC)
+    return static_cast&lt;QP::QTimeEvtCtr&gt;((BSP::random() % (BSP::TICKS_PER_SEC/2))
                                         + (BSP::TICKS_PER_SEC/2U));
 }
 
 // helper function to provide a randomized eat time for Philos
 static inline QP::QTimeEvtCtr eat_time() {
-    return static_cast&lt;QP::QTimeEvtCtr&gt;((BSP::random() % BSP::TICKS_PER_SEC)
-                                        + BSP::TICKS_PER_SEC);
+    return static_cast&lt;QP::QTimeEvtCtr&gt;((BSP::random() % (BSP::TICKS_PER_SEC/2))
+                                        + BSP::TICKS_PER_SEC/2U);
 }
 
 } // unnamed namespace

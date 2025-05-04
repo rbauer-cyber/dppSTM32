@@ -47,11 +47,6 @@ extern CMultiLed g_multiLed;
 
 #include "stm32f4xx_hal.h"
 
-//static uint8_t s_pins[] = {0,1,2,3,4};
-//static uint8_t s_numPins = sizeof(s_pins) / sizeof(s_pins[0]);
-//
-//CMultiLed g_multiLed( s_pins, s_numPins );
-
 //#define NDEBUG
 
 //============================================================================
@@ -427,8 +422,8 @@ namespace QP {
 
 // QF callbacks...
 void QF::onStartup() {
-    // set up the SysTick timer to fire at BSP::TICKS_PER_SEC rate
-    SysTick_Config(SystemCoreClock / BSP::TICKS_PER_SEC);
+    // set up the SysTick timer to fire at BSP::TICKS_PER_SEC rate, 2 secs
+	SysTick_Config((SystemCoreClock / BSP::TICKS_PER_SEC)*2000);
 #if 0
     // assign all priority bits for preemption-prio. and none to sub-prio.
     // NOTE: this might have been changed by STM32Cube.
