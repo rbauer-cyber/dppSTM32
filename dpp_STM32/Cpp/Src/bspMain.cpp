@@ -53,6 +53,23 @@ extern CMultiLed g_multiLed;
 namespace { // unnamed namespace for local stuff with internal linkage
 
 Q_DEFINE_THIS_FILE
+
+#ifdef USE_LEDS
+// Local-scope objects -------------------------------------------------------
+GPIO_TypeDef * const LED_GPIO_PORT        = GPIOD;
+constexpr std::uint32_t LED_GPIO_CLK      {RCC_AHB1Periph_GPIOD};
+
+constexpr std::uint32_t LED4_PIN          {GPIO_Pin_12};
+constexpr std::uint32_t LED3_PIN          {GPIO_Pin_13};
+constexpr std::uint32_t LED5_PIN          {GPIO_Pin_14};
+constexpr std::uint32_t LED6_PIN          {GPIO_Pin_15};
+
+#define BTN_GPIO_PORT     GPIOA
+constexpr std::uint32_t BTN_GPIO_CLK      {RCC_AHB1Periph_GPIOA};
+constexpr std::uint32_t BTN_B1            {GPIO_Pin_0};
+
+static std::uint32_t l_rndSeed;
+
 #ifdef Q_SPY
 
     QP::QSTimeCtr QS_tickTime_;
@@ -68,6 +85,8 @@ Q_DEFINE_THIS_FILE
     };
 
 #endif
+#endif
+
 } // unnamed namespace
 
 //============================================================================
@@ -83,6 +102,18 @@ Q_NORETURN Q_onError(char const * const module, int_t const id) {
     Q_UNUSED_PAR(id);
     consoleDisplayArgs("Q_onError in %s:%d\r\n", module, id);
     QS_ASSERTION(module, id, 10000U);
+
+#ifdef USE_LEDS
+    // light up the user LED
+    LED_GPIO_PORT->BSRRL = LED3_PIN;  // turn LED on
+    LED_GPIO_PORT->BSRRL = LED4_PIN;  // turn LED on
+    LED_GPIO_PORT->BSRRL = LED5_PIN;  // turn LED on
+    LED_GPIO_PORT->BSRRL = LED6_PIN;  // turn LED on
+    // for debugging, hang on in an endless loop...
+    for (;;) {
+    }
+#endif
+
 }
 //............................................................................
 void assert_failed(char const * const module, int_t const id); // prototype
@@ -191,7 +222,46 @@ void init() {
     SystemCoreClockUpdate();
 
     // NOTE The VFP (Floating Point Unit) unit is configured by QV-port
+#ifdef USE_LEDS
+    // Initialize thr port for the LEDs
+    RCC_AHB1PeriphClockCmd(LED_GPIO_CLK , ENABLE);
+
+    // GPIO Configuration for the LEDs...
+    GPIO_InitTypeDef GPIO_struct;
+    GPIO_struct.GPIO_Mode  = GPIO_Mode_OUT;
+    GPIO_struct.GPIO_OType = GPIO_OType_PP;
+    GPIO_struct.GPIO_PuPd  = GPIO_PuPd_UP;
+    GPIO_struct.GPIO_Speed = GPIO_Speed_50MHz;
+
+    GPIO_struct.GPIO_Pin = LED3_PIN;
+    GPIO_Init(LED_GPIO_PORT, &GPIO_struct);
+    LED_GPIO_PORT->BSRRH = LED3_PIN; // turn LED off
+
+    GPIO_struct.GPIO_Pin = LED4_PIN;
+    GPIO_Init(LED_GPIO_PORT, &GPIO_struct);
+    LED_GPIO_PORT->BSRRH = LED4_PIN; // turn LED off
+
+    GPIO_struct.GPIO_Pin = LED5_PIN;
+    GPIO_Init(LED_GPIO_PORT, &GPIO_struct);
+    LED_GPIO_PORT->BSRRH = LED5_PIN; // turn LED off
+
+    GPIO_struct.GPIO_Pin = LED6_PIN;
+    GPIO_Init(LED_GPIO_PORT, &GPIO_struct);
+    LED_GPIO_PORT->BSRRH = LED6_PIN; // turn LED off
+
+    // Initialize thr port for Button
+    RCC_AHB1PeriphClockCmd(BTN_GPIO_CLK , ENABLE);
+
+    // GPIO Configuration for the Button...
+    GPIO_struct.GPIO_Pin   = BTN_B1;
+    GPIO_struct.GPIO_Mode  = GPIO_Mode_IN;
+    GPIO_struct.GPIO_OType = GPIO_OType_PP;
+    GPIO_struct.GPIO_PuPd  = GPIO_PuPd_DOWN;
+    GPIO_struct.GPIO_Speed = GPIO_Speed_50MHz;
+    GPIO_Init(BTN_GPIO_PORT, &GPIO_struct);
+#endif
     BSP::randomSeed(1234U);
+
 #ifdef QSPY
     // initialize the QS software tracing...
     if (!QS_INIT(nullptr)) {
@@ -217,6 +287,10 @@ void start() {
     static QF_MPOOL_EL(APP::TableEvt) smlPoolSto[2*APP::N_PHILO];
     QP::QF::poolInit(smlPoolSto, sizeof(smlPoolSto), sizeof(smlPoolSto[0]));
 
+    // initialize publish-subscribe
+    static QP::QSubscrList subscrSto[APP::MAX_PUB_SIG];
+    QP::QActive::psInit(subscrSto, Q_DIM(subscrSto));
+
     // start AOs/threads...
     static QP::QEvtPtr philoQueueSto[APP::N_PHILO][APP::N_PHILO];
     for (std::uint8_t n = 0U; n < APP::N_PHILO; ++n) {
@@ -237,6 +311,32 @@ void start() {
 //............................................................................
 void displayPhilStat(uint8_t n, EState state) {
     Q_UNUSED_PAR(n);
+#ifdef USE_LEDS
+    if (stat[0] == 'h') {
+        LED_GPIO_PORT->BSRRL = LED3_PIN; // turn LED on
+    }
+    else {
+        LED_GPIO_PORT->BSRRH = LED3_PIN; // turn LED off
+    }
+    if (stat[0] == 'e') {
+        LED_GPIO_PORT->BSRRL = LED5_PIN; // turn LED on
+    }
+    else {
+        LED_GPIO_PORT->BSRRH = LED5_PIN; // turn LED off
+    }
+#else
+//    if (stat[0] == 'h') {
+//        snprintf(s_outBuf, sizeof(s_outBuf), "philo:: %d hungry waiting\r\n", n);
+//    }
+//    else {
+//        snprintf(s_outBuf, sizeof(s_outBuf), "philo:: %d hungry ready\r\n", n);
+//    }
+//    if (stat[0] == 'e') {
+//        snprintf(s_outBuf, sizeof(s_outBuf), "philo:: %d eating\r\n", n);
+//    }
+//    else {
+//        snprintf(s_outBuf, sizeof(s_outBuf), "philo:: %d done eating\r\n", n);
+//    }
 
 	static char const* pStateMsg[] =
 	{
@@ -250,6 +350,7 @@ void displayPhilStat(uint8_t n, EState state) {
     //g_multiLed.ShowState();
     g_multiLed.SetLed(n, ledState);
     //g_multiLed.ToggleLed(g_multiLed.MAX_LEDS);
+#endif
     // app-specific trace record...
 #ifdef QSPY
     QS_BEGIN_ID(PHILO_STAT, APP::AO_Table->getPrio())
@@ -260,6 +361,15 @@ void displayPhilStat(uint8_t n, EState state) {
 }
 //............................................................................
 void displayPaused(uint8_t const paused) {
+#ifdef USE_LEDS
+    if (paused) {
+        LED_GPIO_PORT->BSRRL = LED4_PIN; // turn LED on
+    }
+    else {
+        LED_GPIO_PORT->BSRRH = LED4_PIN; // turn LED off
+    }
+#endif
+
 #ifdef QSPY
     // application-specific trace record
     QS_BEGIN_ID(PAUSED_STAT, APP::AO_Table->getPrio())
@@ -291,6 +401,16 @@ std::uint32_t random() { // a very cheap pseudo-random-number generator
     return (rnd >> 8U);
 }
 //............................................................................
+#ifdef USE_LEDS
+void ledOn() {
+    LED_GPIO_PORT->BSRRL = LED6_PIN;
+}
+//............................................................................
+void ledOff() {
+    LED_GPIO_PORT->BSRRH = LED6_PIN;
+}
+#endif
+//............................................................................
 void terminate(int16_t result) {
     Q_UNUSED_PAR(result);
 }
@@ -304,6 +424,18 @@ namespace QP {
 void QF::onStartup() {
     // set up the SysTick timer to fire at BSP::TICKS_PER_SEC rate, 2 secs
 	SysTick_Config((SystemCoreClock / BSP::TICKS_PER_SEC)*2000);
+#if 0
+    // assign all priority bits for preemption-prio. and none to sub-prio.
+    // NOTE: this might have been changed by STM32Cube.
+    NVIC_SetPriorityGrouping(0U);
+
+    // set priorities of ALL ISRs used in the system, see NOTE1
+    NVIC_SetPriority(USART2_IRQn,    0U); // kernel UNAWARE interrupt
+    NVIC_SetPriority(SysTick_IRQn,   QF_AWARE_ISR_CMSIS_PRI + 1U);
+    // ...
+#endif
+    // enable IRQs...
+
 #ifdef Q_SPY
     NVIC_EnableIRQ(USART2_IRQn); // USART2 interrupt used for QS-RX
 #endif
@@ -316,6 +448,15 @@ void QV::onIdle() { // CAUTION: called with interrupts DISABLED, see NOTE0
 
     // toggle an LED on and then off (not enough LEDs, see NOTE02)
     QF_INT_DISABLE();
+#ifdef USE_LEDS
+    LED_GPIO_PORT->BSRRL = LED6_PIN; // turn LED on
+    __NOP(); // wait a little to actually see the LED glow
+    __NOP();
+    __NOP();
+    __NOP();
+    LED_GPIO_PORT->BSRRH = LED6_PIN; // turn LED off
+#endif
+
 #ifdef Q_SPY
     QF_INT_ENABLE();
     QS::rxParse();  // parse all the received bytes
@@ -329,14 +470,14 @@ void QV::onIdle() { // CAUTION: called with interrupts DISABLED, see NOTE0
             USART2->DR = b; // put into the DR register
         }
     }
-#endif
+#elif defined NDEBUG
+    // Put the CPU and peripherals to the low-power mode.
+    // you might need to customize the clock management for your application,
+    // see the datasheet for your particular Cortex-M MCU.
+    QV_CPU_SLEEP(); // atomically go to sleep and enable interrupts
+#else
     QF_INT_ENABLE(); // just enable interrupts
-    // g_sysAppInterrupt is set by events in QP indicating system state
-    // has changed and the ready queue must be re-examined for active objects
-    // ready to run. Continually disabling and enabling interrupts is
-    // very inefficient and interferes with the event loop.
-    while ( !QF_getSysAppEvent() ) {}
-    QF_clearSysAppEvent();
+#endif
 }
 
 //============================================================================

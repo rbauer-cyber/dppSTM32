@@ -123,6 +123,13 @@ Q_STATE_DEF(Table, initial) {
     //${AOs::Table::SM::initial}
     Q_UNUSED_PAR(e);
 
+    QS_OBJ_DICTIONARY(&Table::inst);
+
+    subscribe(DONE_SIG);
+    subscribe(PAUSE_SIG);
+    subscribe(SERVE_SIG);
+    subscribe(TEST_SIG);
+
     for (std::uint8_t n = 0U; n < N_PHILO; ++n) {
         m_fork[n] = FREE;
         m_isHungry[n] = false;
@@ -174,7 +181,7 @@ Q_STATE_DEF(Table, serving) {
                     TableEvt *te = Q_NEW(TableEvt, EAT_SIG);
                     te->philoId = n;
             #endif
-                    AO_Philo[n]->POST(te, this);
+                    QP::QActive::PUBLISH(te, this);
                     m_isHungry[n] = false;
                     BSP::displayPhilStat(n, EState_Eating);
                 }
@@ -201,7 +208,7 @@ Q_STATE_DEF(Table, serving) {
                 TableEvt *pe = Q_NEW(TableEvt, EAT_SIG);
                 pe->philoId = n;
                 #endif
-                AO_Philo[n]->POST(pe, this);
+                QP::QActive::PUBLISH(pe, this);
                 BSP::displayPhilStat(n, EState_Eating);
                 status_ = Q_RET_HANDLED;
             }
@@ -239,10 +246,9 @@ Q_STATE_DEF(Table, serving) {
                 TableEvt *pe = Q_NEW(TableEvt, EAT_SIG);
                 pe->philoId = m;
             #endif
-                AO_Philo[m]->POST(pe, this);
+                QP::QActive::PUBLISH(pe, this);
                 BSP::displayPhilStat(m, EState_Eating);
             }
-
             m = left(n); // check the left neighbor
             n = left(m); // left fork of the left neighbor
             if (m_isHungry[m] && (m_fork[n] == FREE)) {
@@ -255,7 +261,7 @@ Q_STATE_DEF(Table, serving) {
                 TableEvt *pe = Q_NEW(TableEvt, EAT_SIG);
                 pe->philoId = m;
             #endif
-                AO_Philo[m]->POST(pe, this);
+                QP::QActive::PUBLISH(pe, this);
                 BSP::displayPhilStat(m, EState_Eating);
             }
             status_ = Q_RET_HANDLED;
