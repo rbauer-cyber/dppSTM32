@@ -47,14 +47,14 @@ Q_DEFINE_THIS_FILE
 
 // helper function to provide a randomized think time for Philos
 static inline QP::QTimeEvtCtr think_time() {
-    return static_cast<QP::QTimeEvtCtr>((BSP::random() % BSP::TICKS_PER_SEC)
+    return static_cast<QP::QTimeEvtCtr>((BSP::random() % (BSP::TICKS_PER_SEC/2))
                                         + (BSP::TICKS_PER_SEC/2U));
 }
 
 // helper function to provide a randomized eat time for Philos
 static inline QP::QTimeEvtCtr eat_time() {
-    return static_cast<QP::QTimeEvtCtr>((BSP::random() % BSP::TICKS_PER_SEC)
-                                        + BSP::TICKS_PER_SEC);
+    return static_cast<QP::QTimeEvtCtr>((BSP::random() % (BSP::TICKS_PER_SEC/2))
+                                        + BSP::TICKS_PER_SEC/2U);
 }
 
 } // unnamed namespace
@@ -124,12 +124,6 @@ Q_STATE_DEF(Philo, initial) {
     Q_UNUSED_PAR(e);
 
     m_id = static_cast<std::uint8_t>(this - &inst[0]);
-
-    QS_OBJ_ARR_DICTIONARY(&Philo::inst[m_id], m_id);
-    QS_OBJ_ARR_DICTIONARY(&Philo::inst[m_id].m_timeEvt, m_id);
-
-    subscribe(EAT_SIG);
-    subscribe(TEST_SIG);
     return tran(&thinking);
 }
 
@@ -237,7 +231,8 @@ Q_STATE_DEF(Philo, eating) {
             TableEvt *pe = Q_NEW(TableEvt, DONE_SIG);
             pe->philoId = m_id;
             #endif
-            QP::QActive::PUBLISH(pe, this);
+            //QP::QActive::PUBLISH(pe, this);
+            AO_Table->POST(pe, this);
             status_ = Q_RET_HANDLED;
             break;
         }
