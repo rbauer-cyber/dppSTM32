@@ -121,28 +121,6 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
    */
 }
 
-#if 1
-static int32_t s_encoderPosition = 0;
-
-int32_t encoderUpdate()
-{
-	s_encoderPosition = __HAL_TIM_GET_COUNTER(&htim3);
-
-	if ( s_encoderPosition > 32767 )
-	{
-		s_encoderPosition = s_encoderPosition - 65535;
-	}
-
-	s_encoderPosition /= 4;
-
-	return( s_encoderPosition );
-}
-
-void encoderInit()
-{
-	HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_ALL);
-}
-#endif
 /* USER CODE END 0 */
 
 /**
@@ -179,7 +157,6 @@ int main(void)
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
   //consoleDisplay("encoder app running\r\n");
-  encoderInit();
   //HAL_TIM_Base_Start_IT(&htim4);
   HAL_TIM_Base_Start_IT(&htim2);
   /* USER CODE END 2 */

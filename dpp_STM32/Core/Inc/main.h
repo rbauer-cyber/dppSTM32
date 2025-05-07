@@ -58,7 +58,6 @@ void Error_Handler(void);
 void altMain();
 void appSysTickHandler();
 void Q_SysTick_Handler(void);
-int32_t encoderUpdate();
 uint32_t getMicros();
 /* USER CODE END EFP */
 

@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <atomic>
 
 #include "main.h"
 #include "tim.h"
@@ -30,13 +31,68 @@
 
 #include "multiLed.hpp"
 #include "digitalOut.hpp"
-#include "Stepper.hpp"
 #include "console.h"
+
+// Define functions for enabling/disabling HAL interrupts for critical sections
+// and for setting/detecting Q system events.
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+void QF_int_disable_(void)
+{
+	HAL_SuspendTick();
+}
+
+void QF_int_enable_(void)
+{
+	HAL_ResumeTick();
+}
+
+void QF_crit_entry_(void)
+{
+	HAL_SuspendTick();
+}
+
+void QF_crit_exit_(void)
+{
+	HAL_ResumeTick();
+}
+
+// The following set of functions assume the STM32 instructions
+// are atomic for reading or writing a 16 bit variables.
+// volatile static uint16_t s_sysAppInterrupt = 0;
+std::atomic<uint16_t> s_sysAppInterrupt(0);
+
+volatile void QF_setSysAppEvent()
+{
+	s_sysAppInterrupt = 1;
+}
+
+volatile void QF_clearSysAppEvent()
+{
+	s_sysAppInterrupt = 0;
+}
+
+volatile uint16_t QF_getSysAppEvent()
+{
+	return s_sysAppInterrupt;
+}
+
+#ifdef __cplusplus
+}
+#endif
 
 #ifdef USE_QUANTUM
 void appSysTickHandler()
 {
+	// Use this variable to communicate with QV::onIdle
+	// to indicate that a critical interrupt from the app
+	// has occurred and needs to be service.
 	Q_SysTick_Handler();
+
+	if ( !QF_getSysAppEvent() )
+		QF_setSysAppEvent();
 }
 #endif
 
@@ -70,56 +126,12 @@ static uint8_t s_multiLedPins[] =
 static uint8_t s_numPins = sizeof(s_multiLedPins) / sizeof(s_multiLedPins[0]);
 CMultiLed g_multiLed( s_multiLedPins, s_numPins );
 
-#ifdef USE_MOTOR
-int16_t s_stepsPerRevolution = 2048;
-int16_t s_increment = 2048;
-int16_t s_motorSpeed = 15;
-static int16_t s_motorPosition = 0;
-
-// Initialize with pin sequence IN1-IN3-IN2-IN4 on the stepper motor controller board
-// s_stepper(s_stepsPerRevolution, A3, A1, A2, A0);
-Stepper s_stepper(s_stepsPerRevolution,
-		kAnalogPin02, kAnalogPin04,
-		kAnalogPin03, kAnalogPin05);
-
-void initMotor()
-{
-    s_stepper.setSpeed(s_motorSpeed);
-    s_motorPosition = 0;
-}
-
-int16_t moveMotor(int16_t increment)
-{
-    s_stepper.step(increment);
-    s_motorPosition += increment;
-    return s_motorPosition;
-}
-#endif
-
 void altMain()
 {
-	//int32_t encoderPosition = 0;
-	// getMicros() defined in main using TIM2 at 50MHz
-#ifdef USE_MOTOR
-	uint32_t startTimeUs = getMicros();
-	uint32_t timeNowUs = 0;
-
-#ifdef USE_MOTOR_WITH_ENCODER
-	int32_t newEncoderPosition = 0;
-	int32_t encoderPosition = 0;
-	int motorPositionDelta = 0;
-	encoderPosition = encoderUpdate();
-#endif
-	int motorPosition = 0;
-	int motorIncrement = 128;
-	//int motorIndex = 0;
-	//bool state = false;
-	initMotor();
-#endif
-
 	while ( 1 )
 	{
 #if defined(USE_POLLING)
+		// Use this code for testing LEDS
 #ifdef USE_HAL_DELAY
 		for ( size_t pinIndex = 0; pinIndex < g_multiLed.MaxPins(); pinIndex++ )
 		{
@@ -128,10 +140,6 @@ void altMain()
 			HAL_Delay(1000);
 			g_multiLed.SetLed(pinIndex, 0);
 			HAL_Delay(1000);
-
-			//encoderPosition = encoderUpdate();
-			//consoleDisplayArgs("encoderPosition = %d\r\n", encoderPosition);
-			//g_multiLed.SetNumber(static_cast<uint8_t>(encoderPosition));
 		}
 #else
 		// selecting MAX_LEDS index causes builtin LED to toggle
@@ -143,44 +151,11 @@ void altMain()
 			startTimeUs = timeNowUs;
 			//consoleDisplay("Toggling LED\r\n");
 			g_multiLed.ToggleLed(CMultiLed::MAX_LEDS);
-#ifdef USE_MOTOR_WITH_ENCODER
-			newEncoderPosition = encoderUpdate();
-
-			if ( newEncoderPosition != encoderPosition )
-			{
-				motorPositionDelta = (newEncoderPosition - encoderPosition) * motorIncrement;
-				s_stepper.step(motorPositionDelta);
-				motorPosition = motorPosition + motorPositionDelta;
-				encoderPosition = newEncoderPosition;
-			}
-
-			g_multiLed.SetNumber(encoderPosition);
-
-			consoleDisplayArgs("Encoder position %d, Motor Position %d\r\n",
-					encoderPosition, motorPosition);
-#else
-#ifdef USE_MOTOR
-			//motorIndex = motorPosition / abs(motorIncrement);
-			s_stepper.step(motorIncrement);
-			motorPosition += motorIncrement;
-
-			if ( motorPosition >= s_stepsPerRevolution || motorPosition < 0 )
-			{
-				motorIncrement = motorIncrement * -1;
-			}
-#endif
-#endif
-//			consoleDisplayArgs("Encoder position %d\r\n", encoderPosition);
 		}
 #endif
-#elif defined(USE_QUANTUM)
+#else
 		consoleDisplay("Invoking Quantum BSP_Main\r\n");
 		BSP::bspMain();
-#else
-		encoderPosition = encoderUpdate();
-		consoleDisplayArgs("encoderPosition = %d\r\n", encoderPosition);
-		g_multiLed.SetNumber(static_cast<uint8_t>(encoderPosition));
-		HAL_Delay(1000);
 #endif
 	}
 }
