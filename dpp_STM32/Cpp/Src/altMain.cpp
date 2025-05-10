@@ -89,6 +89,7 @@ void appSysTickHandler()
 	// Use this variable to communicate with QV::onIdle
 	// to indicate that a critical interrupt from the app
 	// has occurred and needs to be service.
+	// Note Q_SysTick_Handler broadcasts the QP::QTimeEvt::TICK_X event.
 	Q_SysTick_Handler();
 
 	if ( !QF_getSysAppEvent() )

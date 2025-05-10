@@ -49,6 +49,7 @@ enum AppSignals : QP::QSignal {
 
     TIMEOUT_SIG,    // posted by time event to Philo
     HUNGRY_SIG,     // posted by hungry Philo to Table
+    NEXT_SIG,       // ready for next event
     MAX_SIG         // the last signal
 };
 
@@ -85,6 +86,9 @@ extern QP::QActive * const AO_Philo[N_PHILO];
 
 //${Shared::AO_Table} ........................................................
 extern QP::QActive * const AO_Table;
+
+//${Shared::AO_Terminal} .....................................................
+extern QP::QActive * const AO_Terminal;
 
 } // namespace APP
 //$enddecl${Shared} ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

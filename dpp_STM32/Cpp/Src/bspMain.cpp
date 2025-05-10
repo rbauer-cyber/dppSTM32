@@ -47,8 +47,6 @@ extern CMultiLed g_multiLed;
 
 #include "stm32f4xx_hal.h"
 
-//#define NDEBUG
-
 //============================================================================
 namespace { // unnamed namespace for local stuff with internal linkage
 
@@ -111,7 +109,7 @@ void Q_SysTick_Handler(void) {
     std::uint32_t tmp = buttons.depressed; // save the depressed buttons
     buttons.depressed |= (buttons.previous & current); // set depressed
     buttons.depressed &= (buttons.previous | current); // clear released
-    buttons.previous   = current; // update the history
+    buttons.previous = current; // update the history
     tmp ^= buttons.depressed;     // changed debounced depressed
     current = buttons.depressed;
 
@@ -214,14 +212,14 @@ void init() {
 //............................................................................
 void start() {
     // initialize event pools
-    static QF_MPOOL_EL(APP::TableEvt) smlPoolSto[2*APP::N_PHILO];
+    static QF_MPOOL_EL(APP::TableEvt) smlPoolSto[3*APP::N_PHILO];
     QP::QF::poolInit(smlPoolSto, sizeof(smlPoolSto), sizeof(smlPoolSto[0]));
 
     // start AOs/threads...
     static QP::QEvtPtr philoQueueSto[APP::N_PHILO][APP::N_PHILO];
     for (std::uint8_t n = 0U; n < APP::N_PHILO; ++n) {
         APP::AO_Philo[n]->start(
-            n + 3U,                  // QF-prio/pthre. see NOTE1
+            n+3U,                    // QF-prio/pthre. see NOTE1
             philoQueueSto[n],        // event queue storage
             Q_DIM(philoQueueSto[n]), // queue length [events]
             nullptr, 0U);            // no stack storage
@@ -229,9 +227,16 @@ void start() {
 
     static QP::QEvtPtr tableQueueSto[APP::N_PHILO];
     APP::AO_Table->start(
-        APP::N_PHILO + 7U,           // QP prio. of the AO
+        APP::N_PHILO+7U,             // QP prio. of the AO
         tableQueueSto,               // event queue storage
         Q_DIM(tableQueueSto),        // queue length [events]
+        nullptr, 0U);                // no stack storage
+
+    static QP::QEvtPtr terminalQueueSto[APP::N_PHILO];
+    APP::AO_Terminal->start(
+        APP::N_PHILO+8U,           	 // QP prio. of the AO
+		terminalQueueSto,            // event queue storage
+        Q_DIM(terminalQueueSto),     // queue length [events]
         nullptr, 0U);                // no stack storage
 }
 //............................................................................
@@ -246,7 +251,7 @@ void displayPhilStat(uint8_t n, EState state) {
 	};
 
 	uint8_t ledState = (state == EState_Eating) ? 1 : 0;
-    consoleDisplayArgs("philo:: %d %s\r\n", n, pStateMsg[state]);
+	CONSOLE_DISPLAY_ARGS("philo:: %d %s\r\n", n, pStateMsg[state]);
     //g_multiLed.ShowState();
     g_multiLed.SetLed(n, ledState);
     //g_multiLed.ToggleLed(g_multiLed.MAX_LEDS);
