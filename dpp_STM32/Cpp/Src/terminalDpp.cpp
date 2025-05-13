@@ -34,6 +34,7 @@
 //$endhead${.::terminalDpp.cpp} ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #include "qpcpp.hpp"             // QP/C++ real-time embedded framework
 #include "dpp.hpp"               // DPP Application interface
+#include "terminal.hpp"          // Base class for TerminalDpp
 #include "bsp.hpp"               // Board Support Package
 
 //$declare${AOs::TerminalDpp} vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv

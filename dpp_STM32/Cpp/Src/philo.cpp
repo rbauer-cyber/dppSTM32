@@ -114,7 +114,7 @@ Philo Philo::inst[N_PHILO];
 //${AOs::Philo::Philo} .......................................................
 Philo::Philo()
   : QActive(Q_STATE_CAST(&initial)),
-    m_timeEvt(this, TIMEOUT_SIG, 0U),
+    m_timeEvt(this, TIMEOUT_DPP_SIG, 0U),
     m_id(0xFFU)
 {}
 
@@ -143,8 +143,8 @@ Q_STATE_DEF(Philo, thinking) {
             status_ = Q_RET_HANDLED;
             break;
         }
-        //${AOs::Philo::SM::thinking::TIMEOUT}
-        case TIMEOUT_SIG: {
+        //${AOs::Philo::SM::thinking::TIMEOUT_DPP}
+        case TIMEOUT_DPP_SIG: {
             status_ = tran(&hungry);
             break;
         }
@@ -236,8 +236,8 @@ Q_STATE_DEF(Philo, eating) {
             status_ = Q_RET_HANDLED;
             break;
         }
-        //${AOs::Philo::SM::eating::TIMEOUT}
-        case TIMEOUT_SIG: {
+        //${AOs::Philo::SM::eating::TIMEOUT_DPP}
+        case TIMEOUT_DPP_SIG: {
             status_ = tran(&thinking);
             break;
         }

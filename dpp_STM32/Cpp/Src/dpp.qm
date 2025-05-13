@@ -58,73 +58,6 @@ Quantum Leaps contact information:
 &lt;info@state-machine.com&gt;
 #48B37CF39D4FD9DE279250B31FD388AFD0BE9B40</license>
  </framework>
- <!--${Shared}-->
- <package name="Shared" stereotype="0x01" namespace="APP::">
-  <!--${Shared::AppSignals}-->
-  <attribute name="AppSignals" type="enum" visibility="0x04" properties="0x00">
-   <code>: QP::QSignal {
-    EAT_SIG = QP::Q_USER_SIG, // published by Table to let a Philo eat
-    DONE_SIG,       // published by Philo when done eating
-    PAUSE_SIG,      // published by BSP to pause the application
-    SERVE_SIG,      // published by BSP to serve re-start serving forks
-    TEST_SIG,       // published by BSP to test the application
-    MAX_PUB_SIG,    // the last published signal
-
-    TIMEOUT_SIG,    // posted by time event to Philo
-    HUNGRY_SIG,     // posted by hungry Philo to Table
-    NEXT_SIG,       // ready for next event
-    MAX_SIG         // the last signal
-};</code>
-  </attribute>
-  <!--${Shared::produce_sig_dict}-->
-  <operation name="produce_sig_dict?def Q_SPY" type="void" visibility="0x00" properties="0x02">
-   <code>QS_SIG_DICTIONARY(EAT_SIG,     nullptr);
-QS_SIG_DICTIONARY(DONE_SIG,    nullptr);
-QS_SIG_DICTIONARY(PAUSE_SIG,   nullptr);
-QS_SIG_DICTIONARY(SERVE_SIG,   nullptr);
-QS_SIG_DICTIONARY(TEST_SIG,    nullptr);
-
-QS_SIG_DICTIONARY(TIMEOUT_SIG, nullptr);
-QS_SIG_DICTIONARY(HUNGRY_SIG,  nullptr);</code>
-  </operation>
-  <!--${Shared::N_PHILO}-->
-  <attribute name="N_PHILO" type="constexpr std::uint8_t" visibility="0x04" properties="0x00">
-   <code>{5};</code>
-  </attribute>
-  <!--${Shared::TableEvt}-->
-  <class name="TableEvt" superclass="qpcpp::QEvt">
-   <!--${Shared::TableEvt::philoId}-->
-   <attribute name="philoId" type="std::uint8_t" visibility="0x00" properties="0x00"/>
-   <!--${Shared::TableEvt::init}-->
-   <operation name="init" type="void" visibility="0x00" properties="0x02">
-    <!--${Shared::TableEvt::init::id}-->
-    <parameter name="id" type="std::uint8_t"/>
-    <code>philoId = id;</code>
-   </operation>
-  </class>
-  <!--${Shared::AO_Philo[N_PHILO]}-->
-  <attribute name="AO_Philo[N_PHILO]" type="QP::QActive * const" visibility="0x00" properties="0x00">
-   <code>= {
-    &amp;Philo::inst[0],
-    &amp;Philo::inst[1],
-    &amp;Philo::inst[2],
-    &amp;Philo::inst[3],
-    &amp;Philo::inst[4]
-};</code>
-  </attribute>
-  <!--${Shared::AO_Table}-->
-  <attribute name="AO_Table" type="QP::QActive * const" visibility="0x00" properties="0x00">
-   <code>= &amp;Table::inst;</code>
-  </attribute>
-  <!--${Shared::AO_Terminal}-->
-  <attribute name="AO_Terminal" type="QP::QActive * const" visibility="0x00" properties="0x00">
-   <code>= &amp;Terminal::inst;</code>
-  </attribute>
-  <!--${Shared::AO_TerminalDpp}-->
-  <attribute name="AO_TerminalDpp" type="QP::QActive * const" visibility="0x00" properties="0x00">
-   <code>= &amp;TerminalDpp::inst;</code>
-  </attribute>
- </package>
  <!--${AOs}-->
  <package name="AOs" stereotype="0x02" namespace="APP::">
   <!--${AOs::Philo}-->
@@ -139,7 +72,7 @@ QS_SIG_DICTIONARY(HUNGRY_SIG,  nullptr);</code>
    <!--${AOs::Philo::Philo}-->
    <operation name="Philo" type="" visibility="0x00" properties="0x00">
     <code>  : QActive(Q_STATE_CAST(&amp;initial)),
-    m_timeEvt(this, TIMEOUT_SIG, 0U),
+    m_timeEvt(this, TIMEOUT_DPP_SIG, 0U),
     m_id(0xFFU)</code>
    </operation>
    <!--${AOs::Philo::SM}-->
@@ -157,8 +90,8 @@ m_id = static_cast&lt;std::uint8_t&gt;(this - &amp;inst[0]);</action>
     <state name="thinking">
      <entry>m_timeEvt.armX(think_time(), 0U);</entry>
      <exit>m_timeEvt.disarm();</exit>
-     <!--${AOs::Philo::SM::thinking::TIMEOUT}-->
-     <tran trig="TIMEOUT" target="../../2">
+     <!--${AOs::Philo::SM::thinking::TIMEOUT_DPP}-->
+     <tran trig="TIMEOUT_DPP" target="../../2">
       <tran_glyph conn="2,16,3,1,20,14,-2">
        <action box="0,-2,12,2"/>
       </tran_glyph>
@@ -229,8 +162,8 @@ pe-&gt;philoId = m_id;
 #endif
 //QP::QActive::PUBLISH(pe, this);
 AO_Table-&gt;POST(pe, this);</exit>
-     <!--${AOs::Philo::SM::eating::TIMEOUT}-->
-     <tran trig="TIMEOUT" target="../../1">
+     <!--${AOs::Philo::SM::eating::TIMEOUT_DPP}-->
+     <tran trig="TIMEOUT_DPP" target="../../1">
       <tran_glyph conn="2,54,3,1,29,-41,-11">
        <action box="0,-2,13,2"/>
       </tran_glyph>
@@ -476,148 +409,8 @@ m_fork[n] = FREE;</action>
     <state_diagram size="60,83"/>
    </statechart>
   </class>
-  <!--${AOs::Terminal}-->
-  <class name="Terminal" superclass="qpcpp::QActive">
-   <!--${AOs::Terminal::inst}-->
-   <attribute name="inst" type="Terminal" visibility="0x00" properties="0x01"/>
-   <!--${AOs::Terminal::m_timeEvt}-->
-   <attribute name="m_timeEvt" type="QP::QTimeEvt" visibility="0x02" properties="0x00"/>
-   <!--${AOs::Terminal::m_gotReply}-->
-   <attribute name="m_gotReply" type="bool" visibility="0x00" properties="0x00"/>
-   <!--${AOs::Terminal::m_input[20]}-->
-   <attribute name="m_input[20]" type="char" visibility="0x00" properties="0x00"/>
-   <!--${AOs::Terminal::m_replySize}-->
-   <attribute name="m_replySize" type="std::uint8_t" visibility="0x00" properties="0x00"/>
-   <!--${AOs::Terminal::m_gotChar}-->
-   <attribute name="m_gotChar" type="bool" visibility="0x00" properties="0x00"/>
-   <!--${AOs::Terminal::m_maxInputSize}-->
-   <attribute name="m_maxInputSize" type="std::uint8_t" visibility="0x00" properties="0x00"/>
-   <!--${AOs::Terminal::Terminal}-->
-   <operation name="Terminal" type="" visibility="0x00" properties="0x00">
-    <code>  : QActive(Q_STATE_CAST(&amp;initial)),
-    m_timeEvt(this, TIMEOUT_SIG, 0U)</code>
-   </operation>
-   <!--${AOs::Terminal::DispatchCommand}-->
-   <operation name="DispatchCommand" type="void" visibility="0x00" properties="0x04">
-    <!--${AOs::Terminal::DispatchCommand::command}-->
-    <parameter name="command" type="char"/>
-    <code>consoleDisplay(&quot;Empty Dispatch command\r\n&quot;);</code>
-   </operation>
-   <!--${AOs::Terminal::SM}-->
-   <statechart properties="0x00">
-    <!--${AOs::Terminal::SM::initial}-->
-    <initial target="../1">
-     <action>//consoleDisplay(&quot;Terminal running\r\n&quot;);
-m_maxInputSize = sizeof(m_input)/sizeof(m_input[0]);</action>
-     <initial_glyph color="3" conn="59,6,5,1,-17">
-      <action box="0,-2,10,2"/>
-     </initial_glyph>
-    </initial>
-    <!--${AOs::Terminal::SM::start}-->
-    <state name="start">
-     <entry>//consoleDisplay(&quot;Terminal ::Idle\r\n&quot;);
-m_timeEvt.armX(1000, 0U);</entry>
-     <exit>m_timeEvt.disarm();</exit>
-     <!--${AOs::Terminal::SM::start::TIMEOUT}-->
-     <tran trig="TIMEOUT" target="../../3">
-      <action brief="Ready"/>
-      <tran_glyph conn="28,12,2,0,8">
-       <action box="-8,3,16,2"/>
-      </tran_glyph>
-     </tran>
-     <state_glyph node="12,3,30,9">
-      <entry box="0,3,6,2"/>
-      <exit box="0,5,6,2"/>
-     </state_glyph>
-    </state>
-    <!--${AOs::Terminal::SM::receiveUserReply}-->
-    <state name="receiveUserReply">
-     <entry>//consoleDisplay(&quot;Terminal ::Receiving USART\r\n&quot;);
-m_gotReply = false;
-m_gotChar = false;
-m_replySize = 0;</entry>
-     <!--${AOs::Terminal::SM::receiveUserReply::initial}-->
-     <initial target="../1">
-      <action>m_gotReply = false;
-m_gotChar = true;
-m_replySize = 0;
-
-consoleReadAsyncInit();</action>
-      <initial_glyph conn="17,42,5,0,11,4">
-       <action box="0,-2,10,2"/>
-      </initial_glyph>
-     </initial>
-     <!--${AOs::Terminal::SM::receiveUserReply::receivingNextChar}-->
-     <state name="receivingNextChar">
-      <entry>if ( m_gotChar )
-{
-    m_gotChar = false;
-    consoleReadByteAsync();
-}
-
-m_timeEvt.armX(300, 0U);</entry>
-      <exit>m_timeEvt.disarm();</exit>
-      <!--${AOs::Terminal::SM::receiveUserReply::receivingNextCha~::TIMEOUT}-->
-      <tran trig="TIMEOUT">
-       <action brief="Check Input">m_gotChar = (consoleInputReady()) ? true : false;
-
-if ( m_gotChar )
-{
-    m_gotReply = (consoleInputDone()) ? true : false;
-}</action>
-       <!--${AOs::Terminal::SM::receiveUserReply::receivingNextCha~::TIMEOUT::[NotDone]}-->
-       <choice target="../..">
-        <guard brief="NotDone">!m_gotReply</guard>
-        <action brief="Got Char"/>
-        <choice_glyph conn="22,61,5,2,11,-8">
-         <action box="4,-3,17,2"/>
-        </choice_glyph>
-       </choice>
-       <!--${AOs::Terminal::SM::receiveUserReply::receivingNextCha~::TIMEOUT::[GotReply]}-->
-       <choice target="../../../../3">
-        <guard brief="GotReply">m_gotReply</guard>
-        <action brief="Done">m_replySize = consoleReadString(m_input, m_maxInputSize);
-consoleDisplay(&quot;\r\n&quot;);
-consoleDisplay(m_input);
-this-&gt;DispatchCommand(m_input[0]);</action>
-        <choice_glyph conn="22,61,4,1,9,36,-46,-16">
-         <action box="-8,4,16,3"/>
-        </choice_glyph>
-       </choice>
-       <tran_glyph conn="22,53,2,-1,8">
-        <action box="-7,2,19,2"/>
-       </tran_glyph>
-      </tran>
-      <state_glyph node="17,46,22,7">
-       <entry box="0,3,6,2"/>
-       <exit box="0,5,6,2"/>
-      </state_glyph>
-     </state>
-     <state_glyph node="11,36,34,37">
-      <entry box="0,3,6,2"/>
-     </state_glyph>
-    </state>
-    <!--${AOs::Terminal::SM::sendUserPrompt}-->
-    <state name="sendUserPrompt">
-     <entry>m_timeEvt.armX(500, 0U);</entry>
-     <exit>m_timeEvt.disarm();</exit>
-     <!--${AOs::Terminal::SM::sendUserPrompt::TIMEOUT}-->
-     <tran trig="TIMEOUT" target="../../2">
-      <action brief="Send Prompt">consoleDisplay(&quot;Enter command: &quot;);</action>
-      <tran_glyph conn="28,28,2,0,8">
-       <action box="-8,3,21,2"/>
-      </tran_glyph>
-     </tran>
-     <state_glyph node="12,20,30,8">
-      <entry box="0,3,6,2"/>
-      <exit box="0,5,6,2"/>
-     </state_glyph>
-    </state>
-    <state_diagram size="80,81"/>
-   </statechart>
-  </class>
   <!--${AOs::TerminalDpp}-->
-  <class name="TerminalDpp" superclass="AOs::Terminal">
+  <class name="TerminalDpp" superclass="BaseAOs::Terminal">
    <!--${AOs::TerminalDpp::inst}-->
    <attribute name="inst" type="TerminalDpp" visibility="0x00" properties="0x01"/>
    <!--${AOs::TerminalDpp::m_defined}-->
@@ -646,6 +439,60 @@ else if ( command == 's' )
    </operation>
   </class>
  </package>
+ <!--${Shared}-->
+ <package name="Shared" stereotype="0x02" namespace="APP::">
+  <!--${Shared::DppSignals}-->
+  <attribute name="DppSignals" type="enum" visibility="0x04" properties="0x00">
+   <code>: QP::QSignal {
+    TIMEOUT_DPP_SIG = QP::Q_USER_SIG, // posted by time event to Philo
+    EAT_SIG,        // published by Table to let a Philo eat
+    DONE_SIG,       // published by Philo when done eating
+    PAUSE_SIG,      // published by BSP to pause the application
+    SERVE_SIG,      // published by BSP to serve re-start serving forks
+    TEST_SIG,       // published by BSP to test the application
+    MAX_PUB_SIG,    // the last published signal
+
+    HUNGRY_SIG,     // posted by hungry Philo to Table
+    NEXT_SIG,       // ready for next event
+    MAX_SIG         // the last signal
+};</code>
+  </attribute>
+  <!--${Shared::N_PHILO}-->
+  <attribute name="N_PHILO" type="constexpr std::uint8_t" visibility="0x04" properties="0x00">
+   <code>{5};</code>
+  </attribute>
+  <!--${Shared::TableEvt}-->
+  <class name="TableEvt" superclass="qpcpp::QEvt">
+   <!--${Shared::TableEvt::philoId}-->
+   <attribute name="philoId" type="std::uint8_t" visibility="0x00" properties="0x00"/>
+   <!--${Shared::TableEvt::init}-->
+   <operation name="init" type="void" visibility="0x00" properties="0x02">
+    <!--${Shared::TableEvt::init::id}-->
+    <parameter name="id" type="std::uint8_t"/>
+    <code>philoId = id;</code>
+   </operation>
+  </class>
+  <!--${Shared::AO_Philo[N_PHILO]}-->
+  <attribute name="AO_Philo[N_PHILO]" type="QP::QActive * const" visibility="0x00" properties="0x00">
+   <code>= {
+    &amp;Philo::inst[0],
+    &amp;Philo::inst[1],
+    &amp;Philo::inst[2],
+    &amp;Philo::inst[3],
+    &amp;Philo::inst[4]
+};</code>
+  </attribute>
+  <!--${Shared::AO_Table}-->
+  <attribute name="AO_Table" type="QP::QActive * const" visibility="0x00" properties="0x00">
+   <code>= &amp;Table::inst;</code>
+  </attribute>
+  <!--${Shared::AO_TerminalDpp}-->
+  <attribute name="AO_TerminalDpp" type="QP::QActive * const" visibility="0x00" properties="0x00">
+   <code>= &amp;TerminalDpp::inst;</code>
+  </attribute>
+ </package>
+ <extern_package file="./../../../../quantum_addon/quantum_addon/Cpp/Src/addon_shared.qmp"/>
+ <extern_package file="./../../../../quantum_addon/quantum_addon/Cpp/Src/addon_aos.qmp"/>
  <!--${.}-->
  <directory name=".">
   <!--${.::../Inc}-->
@@ -656,20 +503,6 @@ else if ( command == 's' )
 #define DPP_HPP_
 
 $declare ${Shared}
-$declare ${AOs::Terminal}
-
-#ifdef QXK_HPP_
-
-namespace APP {
-
-extern QP::QXThread * const TH_XThread1;
-extern QP::QXThread * const TH_XThread2;
-extern QP::QXSemaphore TH_sema;
-extern QP::QXMutex TH_mutex;
-
-} // namespace APP
-
-#endif // QXK_HPP_
 
 #endif // DPP_HPP_</text>
    </file>
@@ -747,30 +580,11 @@ static constexpr char const * const EATING   {&quot;eating  &quot;};
 $define ${Shared::AO_Table}
 $define ${AOs::Table}</text>
   </file>
-  <!--${.::terminal.cpp}-->
-  <file name="terminal.cpp">
-   <text>#include &quot;qpcpp.hpp&quot;             // QP/C++ real-time embedded framework
-#include &quot;dpp.hpp&quot;               // DPP Application interface
-#include &quot;bsp.hpp&quot;               // Board Support Package
-
-#include &quot;console.h&quot;
-#include &quot;multiLed.hpp&quot;
-
-//----------------------------------------------------------------------------
-// unnamed namespace for local definitions with internal linkage
-namespace {
-Q_DEFINE_THIS_FILE
-
-}
-
-//----------------------------------------------------------------------------
-$define ${Shared::AO_Terminal}
-$define ${AOs::Terminal}</text>
-  </file>
   <!--${.::terminalDpp.cpp}-->
   <file name="terminalDpp.cpp">
    <text>#include &quot;qpcpp.hpp&quot;             // QP/C++ real-time embedded framework
 #include &quot;dpp.hpp&quot;               // DPP Application interface
+#include &quot;terminal.hpp&quot;          // Base class for TerminalDpp 
 #include &quot;bsp.hpp&quot;               // Board Support Package
 
 $declare ${AOs::TerminalDpp}
