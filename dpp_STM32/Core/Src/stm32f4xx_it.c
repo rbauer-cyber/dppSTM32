@@ -26,12 +26,12 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN TD */
-#define USE_QP
+
 /* USER CODE END TD */
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define USE_QP
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/

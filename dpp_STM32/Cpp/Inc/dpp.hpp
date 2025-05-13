@@ -90,8 +90,43 @@ extern QP::QActive * const AO_Table;
 //${Shared::AO_Terminal} .....................................................
 extern QP::QActive * const AO_Terminal;
 
+//${Shared::AO_TerminalDpp} ..................................................
+extern QP::QActive * const AO_TerminalDpp;
+
 } // namespace APP
 //$enddecl${Shared} ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+//$declare${AOs::Terminal} vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+namespace APP {
+
+//${AOs::Terminal} ...........................................................
+class Terminal : public QP::QActive {
+public:
+    static Terminal inst;
+
+private:
+    QP::QTimeEvt m_timeEvt;
+
+public:
+    bool m_gotReply;
+    char m_input[20];
+    std::uint8_t m_replySize;
+    bool m_gotChar;
+    std::uint8_t m_maxInputSize;
+
+public:
+    Terminal();
+    virtual void DispatchCommand(char command);
+
+protected:
+    Q_STATE_DECL(initial);
+    Q_STATE_DECL(start);
+    Q_STATE_DECL(receiveUserReply);
+    Q_STATE_DECL(receivingNextChar);
+    Q_STATE_DECL(sendUserPrompt);
+}; // class Terminal
+
+} // namespace APP
+//$enddecl${AOs::Terminal} ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 #ifdef QXK_HPP_
 

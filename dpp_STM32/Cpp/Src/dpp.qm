@@ -1,6 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <model version="7.0.0" links="1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.state-machine.com/qm/qm7.xsd">
- <documentation>Dining Philosopher Problem example application</documentation>
+ <documentation>About this example:
+-------------------
+Dining Philosopher Problem console application for workstations
+(Windows, Linux, macOS)
+(see qpcpp\examples\workstation\dpp)
+
+This example demonstrates:
+- Multiple communicating active objects (Philo[5] and Table) with state machines
+- Publish-subscribe and direct event posting
+- Board Support Package abstraction for portability
+- BSP implementation for desktop OS (Windows, Linux, MacOS)
+- Platform-independent main() function
+- Makefile to build the generated code with GNU toolchain
+- Customized tools for building the generated code directly from QM&lt;/documentation&gt;
+
+Building the example:
+---------------------
+To build this example, you will need the QP/C++ framework installed on your computer and the GNU-GCC compiler, which you can get by installing the QP-bundle from:
+
+https://www.state-machine.com/#Downloads
+
+Running the example:
+--------------------
+This example is a simple console application, which you can run from a terminal.
+
+For more QM examples for QP/C++ see:
+https://www.state-machine.com/qpcpp/exa.html</documentation>
  <!--${qpcpp}-->
  <framework name="qpcpp">
   <license name="LicenseRef-QL-dual">public
@@ -93,6 +119,10 @@ QS_SIG_DICTIONARY(HUNGRY_SIG,  nullptr);</code>
   <!--${Shared::AO_Terminal}-->
   <attribute name="AO_Terminal" type="QP::QActive * const" visibility="0x00" properties="0x00">
    <code>= &amp;Terminal::inst;</code>
+  </attribute>
+  <!--${Shared::AO_TerminalDpp}-->
+  <attribute name="AO_TerminalDpp" type="QP::QActive * const" visibility="0x00" properties="0x00">
+   <code>= &amp;TerminalDpp::inst;</code>
   </attribute>
  </package>
  <!--${AOs}-->
@@ -467,6 +497,12 @@ m_fork[n] = FREE;</action>
     <code>  : QActive(Q_STATE_CAST(&amp;initial)),
     m_timeEvt(this, TIMEOUT_SIG, 0U)</code>
    </operation>
+   <!--${AOs::Terminal::DispatchCommand}-->
+   <operation name="DispatchCommand" type="void" visibility="0x00" properties="0x04">
+    <!--${AOs::Terminal::DispatchCommand::command}-->
+    <parameter name="command" type="char"/>
+    <code>consoleDisplay(&quot;Empty Dispatch command\r\n&quot;);</code>
+   </operation>
    <!--${AOs::Terminal::SM}-->
    <statechart properties="0x00">
     <!--${AOs::Terminal::SM::initial}-->
@@ -543,19 +579,7 @@ if ( m_gotChar )
         <action brief="Done">m_replySize = consoleReadString(m_input, m_maxInputSize);
 consoleDisplay(&quot;\r\n&quot;);
 consoleDisplay(m_input);
-
-if ( m_input[0] == 'p' )
-{
-    TableEvt *pe = Q_NEW(TableEvt, PAUSE_SIG);
-    pe-&gt;philoId = 0;
-    AO_Table-&gt;POST(pe, this);
-}
-else if ( m_input[0] == 's' )
-{
-    TableEvt *pe = Q_NEW(TableEvt, SERVE_SIG);
-    pe-&gt;philoId = 0;
-    AO_Table-&gt;POST(pe, this);
-}</action>
+this-&gt;DispatchCommand(m_input[0]);</action>
         <choice_glyph conn="22,61,4,1,9,36,-46,-16">
          <action box="-8,4,16,3"/>
         </choice_glyph>
@@ -592,6 +616,35 @@ else if ( m_input[0] == 's' )
     <state_diagram size="80,81"/>
    </statechart>
   </class>
+  <!--${AOs::TerminalDpp}-->
+  <class name="TerminalDpp" superclass="AOs::Terminal">
+   <!--${AOs::TerminalDpp::inst}-->
+   <attribute name="inst" type="TerminalDpp" visibility="0x00" properties="0x01"/>
+   <!--${AOs::TerminalDpp::m_defined}-->
+   <attribute name="m_defined" type="int" visibility="0x00" properties="0x00"/>
+   <!--${AOs::TerminalDpp::TerminalDpp}-->
+   <operation name="TerminalDpp" type="" visibility="0x00" properties="0x00">
+    <code>  : m_defined(1)</code>
+   </operation>
+   <!--${AOs::TerminalDpp::DispatchCommand}-->
+   <operation name="DispatchCommand" type="void" visibility="0x00" properties="0x00">
+    <specifiers>override</specifiers>
+    <!--${AOs::TerminalDpp::DispatchCommand::command}-->
+    <parameter name="command" type="char"/>
+    <code>if ( command == 'p' )
+{
+    TableEvt *pe = Q_NEW(TableEvt, PAUSE_SIG);
+    pe-&gt;philoId = 0;
+    AO_Table-&gt;POST(pe, this);
+}
+else if ( command == 's' )
+{
+    TableEvt *pe = Q_NEW(TableEvt, SERVE_SIG);
+    pe-&gt;philoId = 0;
+    AO_Table-&gt;POST(pe, this);
+}</code>
+   </operation>
+  </class>
  </package>
  <!--${.}-->
  <directory name=".">
@@ -603,6 +656,7 @@ else if ( m_input[0] == 's' )
 #define DPP_HPP_
 
 $declare ${Shared}
+$declare ${AOs::Terminal}
 
 #ifdef QXK_HPP_
 
@@ -702,8 +756,6 @@ $define ${AOs::Table}</text>
 #include &quot;console.h&quot;
 #include &quot;multiLed.hpp&quot;
 
-$declare ${AOs::Terminal}
-
 //----------------------------------------------------------------------------
 // unnamed namespace for local definitions with internal linkage
 namespace {
@@ -714,6 +766,18 @@ Q_DEFINE_THIS_FILE
 //----------------------------------------------------------------------------
 $define ${Shared::AO_Terminal}
 $define ${AOs::Terminal}</text>
+  </file>
+  <!--${.::terminalDpp.cpp}-->
+  <file name="terminalDpp.cpp">
+   <text>#include &quot;qpcpp.hpp&quot;             // QP/C++ real-time embedded framework
+#include &quot;dpp.hpp&quot;               // DPP Application interface
+#include &quot;bsp.hpp&quot;               // Board Support Package
+
+$declare ${AOs::TerminalDpp}
+
+//----------------------------------------------------------------------------
+$define ${Shared::AO_TerminalDpp}
+$define ${AOs::TerminalDpp}</text>
   </file>
  </directory>
 </model>

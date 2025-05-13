@@ -51,6 +51,7 @@ extern CMultiLed g_multiLed;
 namespace { // unnamed namespace for local stuff with internal linkage
 
 Q_DEFINE_THIS_FILE
+
 #ifdef Q_SPY
 
     QP::QSTimeCtr QS_tickTime_;
@@ -97,35 +98,12 @@ void Q_SysTick_Handler(void) {
 
 	QP::QTimeEvt::TICK_X(0U, &l_SysTick_Handler); // time events at rate 0
 
-#ifdef USE_BUTTON
-    // Perform the debouncing of buttons. The algorithm for debouncing
-    // adapted from the book "Embedded Systems Dictionary" by Jack Ganssle
-    // and Michael Barr, page 71.
-    static struct {
-        std::uint32_t depressed;
-        std::uint32_t previous;
-    } buttons = { 0U, 0U };
-    std::uint32_t current = BTN_GPIO_PORT->IDR; // read BTN GPIO
-    std::uint32_t tmp = buttons.depressed; // save the depressed buttons
-    buttons.depressed |= (buttons.previous & current); // set depressed
-    buttons.depressed &= (buttons.previous | current); // clear released
-    buttons.previous = current; // update the history
-    tmp ^= buttons.depressed;     // changed debounced depressed
-    current = buttons.depressed;
-
-    if ((tmp & BTN_B1) != 0U) { // debounced B1 state changed?
-        if ((current & BTN_B1) != 0U) { // is B1 depressed?
-            static QP::QEvt const pauseEvt(APP::PAUSE_SIG);
-            QP::QActive::PUBLISH(&pauseEvt, &l_SysTick_Handler);
-        }
-        else { // the button is released
-            static QP::QEvt const serveEvt(APP::SERVE_SIG);
-            QP::QActive::PUBLISH(&serveEvt, &l_SysTick_Handler);
-        }
-    }
-#endif
-
 #ifdef Q_SPY
+	// ISR for receiving bytes from the QSPY Back-End
+	// NOTE: This ISR is "QF-unaware" meaning that it does not interact with
+	// the QF/QV and is not disabled. Such ISRs don't need to call
+	// QV_ISR_ENTRY/QV_ISR_EXIT and they cannot post or publish events.
+
     tmp = SysTick->CTRL; // clear CTRL_COUNTFLAG
     QS_tickTime_ += QS_tickPeriod_; // account for the clock rollover
 #endif
@@ -190,6 +168,7 @@ void init() {
 
     // NOTE The VFP (Floating Point Unit) unit is configured by QV-port
     BSP::randomSeed(1234U);
+
 #ifdef QSPY
     // initialize the QS software tracing...
     if (!QS_INIT(nullptr)) {
@@ -211,11 +190,12 @@ void init() {
 }
 //............................................................................
 void start() {
-    // initialize event pools
+    consoleDisplay("App starting\r\n");
+	// initialize event pools
     static QF_MPOOL_EL(APP::TableEvt) smlPoolSto[3*APP::N_PHILO];
     QP::QF::poolInit(smlPoolSto, sizeof(smlPoolSto), sizeof(smlPoolSto[0]));
 
-    // start AOs/threads...
+    // start AOs... QV kernel bare metal, no threads
     static QP::QEvtPtr philoQueueSto[APP::N_PHILO][APP::N_PHILO];
     for (std::uint8_t n = 0U; n < APP::N_PHILO; ++n) {
         APP::AO_Philo[n]->start(
@@ -232,12 +212,18 @@ void start() {
         Q_DIM(tableQueueSto),        // queue length [events]
         nullptr, 0U);                // no stack storage
 
+    // TerminalDpp overrides the Dispatch method for Terminal in the Dpp app.
+    // The Dispatch method sends the required events to AOs in the app.
+    // TerminalDpp only implements the Dispatch method and uses the
+    // base class for all the other behavior in the state machine
     static QP::QEvtPtr terminalQueueSto[APP::N_PHILO];
-    APP::AO_Terminal->start(
+    APP::AO_TerminalDpp->start(
         APP::N_PHILO+8U,           	 // QP prio. of the AO
 		terminalQueueSto,            // event queue storage
         Q_DIM(terminalQueueSto),     // queue length [events]
         nullptr, 0U);                // no stack storage
+
+    consoleDisplay("App started\r\n");
 }
 //............................................................................
 void displayPhilStat(uint8_t n, EState state) {
@@ -318,8 +304,6 @@ void QF::onCleanup() {
 }
 //............................................................................
 void QV::onIdle() { // CAUTION: called with interrupts DISABLED, see NOTE0
-
-    // toggle an LED on and then off (not enough LEDs, see NOTE02)
     QF_INT_DISABLE();
 #ifdef Q_SPY
     QF_INT_ENABLE();

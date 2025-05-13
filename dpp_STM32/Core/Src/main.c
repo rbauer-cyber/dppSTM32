@@ -63,7 +63,7 @@ volatile uint32_t s_elapsedTimeUs = 0;
 
 uint32_t getMicros()
 {
-	// Resolution is 2 micro-secs using TIM2 at 50 MHz
+	// Resolution is 2 micro-secs using TIM2 at 50 MHz, counter period set 99, 2us
 	return s_elapsedTimeUs;
 }
 
@@ -156,14 +156,11 @@ int main(void)
   MX_TIM2_Init();
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
-  //consoleDisplay("encoder app running\r\n");
-  //HAL_TIM_Base_Start_IT(&htim4);
   HAL_TIM_Base_Start_IT(&htim2);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-
   while (1)
   {
 	  // This is a C++ function allowing project to support C++ classes

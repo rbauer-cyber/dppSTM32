@@ -39,38 +39,6 @@
 #include "console.h"
 #include "multiLed.hpp"
 
-//$declare${AOs::Terminal} vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-namespace APP {
-
-//${AOs::Terminal} ...........................................................
-class Terminal : public QP::QActive {
-public:
-    static Terminal inst;
-
-private:
-    QP::QTimeEvt m_timeEvt;
-
-public:
-    bool m_gotReply;
-    char m_input[20];
-    std::uint8_t m_replySize;
-    bool m_gotChar;
-    std::uint8_t m_maxInputSize;
-
-public:
-    Terminal();
-
-protected:
-    Q_STATE_DECL(initial);
-    Q_STATE_DECL(start);
-    Q_STATE_DECL(receiveUserReply);
-    Q_STATE_DECL(receivingNextChar);
-    Q_STATE_DECL(sendUserPrompt);
-}; // class Terminal
-
-} // namespace APP
-//$enddecl${AOs::Terminal} ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
 //----------------------------------------------------------------------------
 // unnamed namespace for local definitions with internal linkage
 namespace {
@@ -104,6 +72,11 @@ Terminal::Terminal()
   : QActive(Q_STATE_CAST(&initial)),
     m_timeEvt(this, TIMEOUT_SIG, 0U)
 {}
+
+//${AOs::Terminal::DispatchCommand} ..........................................
+void Terminal::DispatchCommand(char command) {
+    consoleDisplay("Empty Dispatch command\r\n");
+}
 
 //${AOs::Terminal::SM} .......................................................
 Q_STATE_DEF(Terminal, initial) {
@@ -213,19 +186,7 @@ Q_STATE_DEF(Terminal, receivingNextChar) {
                 m_replySize = consoleReadString(m_input, m_maxInputSize);
                 consoleDisplay("\r\n");
                 consoleDisplay(m_input);
-
-                if ( m_input[0] == 'p' )
-                {
-                    TableEvt *pe = Q_NEW(TableEvt, PAUSE_SIG);
-                    pe->philoId = 0;
-                    AO_Table->POST(pe, this);
-                }
-                else if ( m_input[0] == 's' )
-                {
-                    TableEvt *pe = Q_NEW(TableEvt, SERVE_SIG);
-                    pe->philoId = 0;
-                    AO_Table->POST(pe, this);
-                }
+                this->DispatchCommand(m_input[0]);
                 status_ = tran(&sendUserPrompt);
             }
             else {

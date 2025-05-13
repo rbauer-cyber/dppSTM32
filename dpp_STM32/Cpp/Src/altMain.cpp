@@ -32,56 +32,8 @@
 #include "multiLed.hpp"
 #include "digitalOut.hpp"
 #include "console.h"
+#include "QFsys.h"
 
-// Define functions for enabling/disabling HAL interrupts for critical sections
-// and for setting/detecting Q system events.
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-void QF_int_disable_(void)
-{
-	HAL_SuspendTick();
-}
-
-void QF_int_enable_(void)
-{
-	HAL_ResumeTick();
-}
-
-void QF_crit_entry_(void)
-{
-	HAL_SuspendTick();
-}
-
-void QF_crit_exit_(void)
-{
-	HAL_ResumeTick();
-}
-
-// The following set of functions assume the STM32 instructions
-// are atomic for reading or writing a 16 bit variables.
-// volatile static uint16_t s_sysAppInterrupt = 0;
-std::atomic<uint16_t> s_sysAppInterrupt(0);
-
-volatile void QF_setSysAppEvent()
-{
-	s_sysAppInterrupt = 1;
-}
-
-volatile void QF_clearSysAppEvent()
-{
-	s_sysAppInterrupt = 0;
-}
-
-volatile uint16_t QF_getSysAppEvent()
-{
-	return s_sysAppInterrupt;
-}
-
-#ifdef __cplusplus
-}
-#endif
 
 #ifdef USE_QUANTUM
 void appSysTickHandler()
@@ -114,18 +66,6 @@ void appSysTickHandler()
 //gray	 - IN2	- A3
 //white	 - IN3	- A4
 //black	 - IN4	- A5
-
-static uint8_t s_multiLedPins[] =
-{
-		kDigitalPin08, // PA9
-		kDigitalPin09, // PC7
-		kDigitalPin10, // PB6
-		kDigitalPin11, // PA7
-		kDigitalPin12, // PA6
-};
-
-static uint8_t s_numPins = sizeof(s_multiLedPins) / sizeof(s_multiLedPins[0]);
-CMultiLed g_multiLed( s_multiLedPins, s_numPins );
 
 void altMain()
 {
