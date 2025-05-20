@@ -491,8 +491,8 @@ else if ( command == 's' )
    <code>= &amp;TerminalDpp::inst;</code>
   </attribute>
  </package>
- <extern_package file="./../../../../quantum_addon/quantum_addon/Cpp/Src/addon_shared.qmp"/>
- <extern_package file="./../../../../quantum_addon/quantum_addon/Cpp/Src/addon_aos.qmp"/>
+ <extern_package file="./../../../../quantum_addon_stm32/quantum_addon/Cpp/Src/addon_shared.qmp"/>
+ <extern_package file="./../../../../quantum_addon_stm32/quantum_addon/Cpp/Src/addon_aos.qmp"/>
  <!--${.}-->
  <directory name=".">
   <!--${.::../Inc}-->

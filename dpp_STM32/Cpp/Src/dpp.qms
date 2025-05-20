@@ -9,12 +9,12 @@
   <item name="backups">0</item>
  </group>
  <group name="windows">
-  <item id="AOs::Table::SM">0,0,802,662</item>
-  <item id=".::table.cpp">232,29,766,678</item>
-  <item id=".::philo.cpp">0,407,596,300</item>
-  <item id="AOs::Philo::SM">196,0,802,484</item>
-  <item id=".::../Inc::dpp.hpp">0,45,802,662</item>
-  <item id=".::terminalDpp.cpp">0,0,998,675,*</item>
+  <item id="AOs::Table::SM">-105,0,802,662</item>
+  <item id=".::table.cpp">0,0,766,678</item>
+  <item id=".::philo.cpp">0,376,596,300</item>
+  <item id="AOs::Philo::SM">0,0,802,484</item>
+  <item id=".::../Inc::dpp.hpp">-105,14,802,662</item>
+  <item id=".::terminalDpp.cpp">0,0,697,644,*</item>
  </group>
  <group name="search">
   <item name="options">2032128</item>
