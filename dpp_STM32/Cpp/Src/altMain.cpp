@@ -11,7 +11,7 @@
 //#define USE_MOTOR_WITH_ENCODER
 //#define USE_TIMER_INTERRUPT
 //#define USE_UART_TX_INTERRUPT
-#define USE_UART_TX_DATA
+//#define USE_UART_TX_DATA
 //#define USE_UART_RX_INTERRUPT
 //#define USE_UART_RX_BLOCK
 //#define USE_UART_RX
@@ -47,6 +47,10 @@ void appSysTickHandler()
 	if ( !QF_getSysAppEvent() )
 		QF_setSysAppEvent();
 }
+#else
+void appSysTickHandler()
+{
+}
 #endif
 
 //kAnalogPin00,	//PA0	A0 - CN8 - IN1
@@ -67,10 +71,14 @@ void appSysTickHandler()
 //white	 - IN3	- A4
 //black	 - IN4	- A5
 
+extern CMultiLed g_multiLed;
+
 void altMain()
 {
 	while ( 1 )
 	{
+		uint32_t startTimeUs = getMicros();
+		uint32_t timeNowUs = 0;
 #if defined(USE_POLLING)
 		// Use this code for testing LEDS
 #ifdef USE_HAL_DELAY
